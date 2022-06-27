@@ -12,6 +12,23 @@ def multiply_monomials(mon1: Tuple[int, ...], mon2: Tuple[int, ...]) -> Tuple[in
     """
     return tuple(sorted(list(set(list(mon1) + list(mon2))))) 
 
+def multiply_polynomials(poly1: List[Tuple[int,...]],
+                         poly2: List[Tuple[int,...]]) -> List[Tuple[int, ...]]:
+    """
+    Multiplies two polynomials over F_2
+    """
+    result = []
+    for a,b in product(poly1, poly2):
+        result.append(multiply_monomials(a, b))
+    result.sort()
+    final = []
+    for x in result:
+        if not final or final[-1] != x:
+            final.append(x)
+        elif final[-1] == x:
+            final = final[:-1]
+    return final
+
 
 def num_of_monomials_deg_atmost(n:int, d: int) -> int:
     """
@@ -117,12 +134,11 @@ def generate_equations(n: int, p: List[Tuple[int, ...]]) -> Tuple[List[List[Tupl
 def calculate_dim_of_prod(n: int, A, prj) -> int:
     return (A * matrix((prj * A).transpose().kernel().basis()).transpose()).rank()
 
-
 def calculate_dim_of_qs(n: int, A, prj) -> int:
-    return (matrix((prj * A).transpose().kernel().basis()).transpose()).rank()
+    return matrix((prj * A).transpose().kernel().basis()).rank()
 
-for n in range(3, 12):
-    p = [(0, 1, 2)]
+for n in range(11, 40):
+    p = [(0, 1, 2), (4, 5, 6), (1, 2), (4,5), (6, 7)]
     A, prj = generate_equations(n, p)
     print('n=', n, 'rank of prod=', calculate_dim_of_prod(n, A, prj), "  rank of qs=", calculate_dim_of_qs(n, A, prj))
     print('p=', p)
@@ -131,9 +147,10 @@ for n in range(3, 12):
     for j in range(len(vec)):
         if vec[j]==1:
             q.append(i_to_mon[j])
-    print('q in kernel=', q)
+    
+    print('q in kernel=', q, multiply_polynomials(p, q))
 
-# A = matrix(GF(2), [[1, 1, 0], [0,1,1], [1,0,1]])
+# A = matrix(G3(2), [[1, 1, 0], [0,1,1], [1,0,1]])
 # print(A * vector(GF(2), [1,1,1]))
 # print(matrix(A.kernel().basis()) * vector(GF(2), [1,1,1]))
 # #print(A.kernel() * vector(GF(2), [1,1,1]).transpose())
