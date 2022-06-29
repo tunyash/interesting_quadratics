@@ -5,7 +5,7 @@ from sage.all import *
 from itertools import product
 from typing import Tuple, List, Set, Dict
 from collections import defaultdict
-from random import randint
+from random import randint, seed
 
 def multiply_monomials(mon1: Tuple[int, ...], mon2: Tuple[int, ...]) -> Tuple[int, ...]:
     """
@@ -93,9 +93,11 @@ def create_multiplying_matrix(n: int, eq_map: Dict[tuple, List[tuple]]):
            matrix(GF(2), len(mon_to_i), len(mon_to_i), prj_4_dict)
 
 
+monomials_list: List[Tuple[int, ...]] #monomials of degree at most 3
 
-def generate_equations(n: int, p: List[Tuple[int, ...]]) -> Tuple[List[List[Tuple[int, ...]]], List[Tuple[str, Tuple[int, ...]]]]:
-    eq_map = defaultdict(list)
+
+def populate_monomials_list(n: int):
+    global monomials_list
     monomials_list = []
     for b in product(range(n), repeat=3): # cubic monomials
         if b[0] >= b[1] or b[1] >= b[2]:
@@ -111,8 +113,12 @@ def generate_equations(n: int, p: List[Tuple[int, ...]]) -> Tuple[List[List[Tupl
     global mon_to_i
     mon_to_i = dict(zip(monomials_list, range(len(monomials_list))))
     global i_to_mon
-    i_to_mon = dict(zip(range(len(monomials_list)), monomials_list))
+    i_to_mon = dict(zip(range(len(monomials_list)), monomials_list)) #TODO: add the above-deg-3 monomials (or leavet hem being populated in generate_equations?)
 
+
+def generate_equations(n: int, p: List[Tuple[int, ...]]) -> Tuple[List[List[Tuple[int, ...]]], List[Tuple[str, Tuple[int, ...]]]]:
+    eq_map = defaultdict(list)
+    populate_monomials_list(n)
     # for a in p:        
     for b in monomials_list:
         result = multiply_polynomials(p, [b])
@@ -139,9 +145,13 @@ def calculate_dim_of_prod(n: int, A, prj) -> int:
 def calculate_dim_of_qs(n: int, A, prj) -> int:
     return matrix((prj * A).transpose().kernel().basis()).rank()
 
-for n in range(4, 5):#11,40):
-    p = [(0, 1, 2), (4, 5, 6), (1, 2), (4,5), (6, 7)]#[(0, 1),(1,2),(2,3),(1,3)] with n=4 showed the bug (the code was using monomials multiplication, rather than polynomials multiplication, to create A)
-    # p = [i_to_mon[i] for i in range(num_of_monomials_deg_atmost(n, 3)) if randint(0, 1)] 
+seed(16) #16 looks like a counterexample
+min_n = 4
+max_n = 10
+populate_monomials_list(min_n)
+p = [i_to_mon[i] for i in range(num_of_monomials_deg_atmost(min_n, 3)) if randint(0, 1)] 
+for n in range(4, max_n + 1):#11,40):
+    # p = [(0, 1, 2), (4, 5, 6), (1, 2), (4,5), (6, 7)]#[(0, 1),(1,2),(2,3),(1,3)] with n=4 showed the bug (the code was using monomials multiplication, rather than polynomials multiplication, to create A)
     A, prj = generate_equations(n, p)
     print('n=', n, 'rank of prod=', calculate_dim_of_prod(n, A, prj), "  rank of qs=", calculate_dim_of_qs(n, A, prj))
     print('p=', p)
