@@ -5,6 +5,7 @@ from sage.all import *
 from itertools import product
 from typing import Tuple, List, Set, Dict
 from collections import defaultdict
+from random import randint
 
 def multiply_monomials(mon1: Tuple[int, ...], mon2: Tuple[int, ...]) -> Tuple[int, ...]:
     """
@@ -112,10 +113,11 @@ def generate_equations(n: int, p: List[Tuple[int, ...]]) -> Tuple[List[List[Tupl
     global i_to_mon
     i_to_mon = dict(zip(range(len(monomials_list)), monomials_list))
 
-    for a in p:        
-        for b in monomials_list:
-            result = multiply_monomials(a, b)
-            eq_map[result].append(('q', b))
+    # for a in p:        
+    for b in monomials_list:
+        result = multiply_polynomials(p, [b])
+        for mon in result:
+            eq_map[mon].append(('q', b))
     for a in eq_map.keys():
         if a not in mon_to_i:
             new_i = len(mon_to_i)
@@ -137,12 +139,27 @@ def calculate_dim_of_prod(n: int, A, prj) -> int:
 def calculate_dim_of_qs(n: int, A, prj) -> int:
     return matrix((prj * A).transpose().kernel().basis()).rank()
 
-for n in range(11, 40):
-    p = [(0, 1, 2), (4, 5, 6), (1, 2), (4,5), (6, 7)]
+for n in range(4, 5):#11,40):
+    p = [(0, 1, 2), (4, 5, 6), (1, 2), (4,5), (6, 7)]#[(0, 1),(1,2),(2,3),(1,3)] with n=4 showed the bug (the code was using monomials multiplication, rather than polynomials multiplication, to create A)
+    # p = [i_to_mon[i] for i in range(num_of_monomials_deg_atmost(n, 3)) if randint(0, 1)] 
     A, prj = generate_equations(n, p)
     print('n=', n, 'rank of prod=', calculate_dim_of_prod(n, A, prj), "  rank of qs=", calculate_dim_of_qs(n, A, prj))
     print('p=', p)
+    is_of_p = [mon_to_i[mon] for mon in p]
+    mons_from_is_of_p = [i_to_mon[i] for i in is_of_p]
+    # print('indices of mons of p: ', is_of_p)
+    # print('mons reconverted from these indices: ', mons_from_is_of_p)
     vec = matrix((prj * A).transpose().kernel().basis())[0]
+    # print('A: ')
+    # print(A.transpose())
+    # print('projection matrix: ')
+    # print(prj.transpose())
+    # print('their product:')
+    # print((prj * A).transpose())
+    # print('the vec itself is: ', vec)
+    # print('multiplying by A to: ', vec * (A.transpose()))
+    # print('and by the product, the vec is multiplied to: ', vec * ((prj * A).transpose()))
+
     q = []
     for j in range(len(vec)):
         if vec[j]==1:
