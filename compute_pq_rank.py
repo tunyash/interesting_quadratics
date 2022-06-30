@@ -145,21 +145,67 @@ def calculate_dim_of_prod(n: int, A, prj) -> int:
 def calculate_dim_of_qs(n: int, A, prj) -> int:
     return matrix((prj * A).transpose().kernel().basis()).rank()
 
-seed(16) #16 looks like a counterexample
-min_n = 4
-max_n = 10
-populate_monomials_list(min_n)
-p = [i_to_mon[i] for i in range(num_of_monomials_deg_atmost(min_n, 3)) if randint(0, 1)] 
-for n in range(4, max_n + 1):#11,40):
+def search_for_quad_growth(min_n:int, max_n: int, first_seed:int, threshold:int):
+    for cur_seed in range(first_seed, first_seed+100):
+        seed(cur_seed)
+        populate_monomials_list(min_n)
+        with_constant = False #a flag deciding whether a constant is part of p or not
+        p = [i_to_mon[i] for i in range(num_of_monomials_deg_atmost(min_n, 3)) if randint(0, 100)<5 and (i_to_mon[i] is not ())] #without the constant 
+        if len(p) == 0 or max(len(t) for t in p) < 2:
+            continue
+        if with_constant:
+            p.append(())
+        print('Candidate p=', p)
+        diff = -1
+        prev_diff = -1
+        prev_dim_of_prod = -1
+        dim_of_prod = -1
+        diff_grows = 0
+        for n in range(min_n, max_n + 1):#11,40):
+            # p = [(0, 1, 2), (4, 5, 6), (1, 2), (4,5), (6, 7)]#[(0, 1),(1,2),(2,3),(1,3)] with n=4 showed the bug (the code was using monomials multiplication, rather than polynomials multiplication, to create A)
+            # p = [(0, 1, 2), (0, 1, 3), (0, 2, 3), (1, 2, 3), (0, 1), (0, 3), (1, 3), (2, 3), (3,), ()] looks like a counterexample (seed=16)
+            print('current n=',n, ' and previous dim_of_prod=', dim_of_prod)
+            A, prj = generate_equations(n, p)
+            prev_dim_of_prod = dim_of_prod
+            dim_of_prod = calculate_dim_of_prod(n, A, prj)
+            if prev_dim_of_prod > 0:
+                prev_diff = diff
+                diff = dim_of_prod - prev_dim_of_prod
+                if prev_diff > 0:
+                    if diff > prev_diff:
+                        diff_grows += 1
+                    else:
+                        diff_grows = 0
+            if diff_grows > threshold:
+                print('n=', n, 'rank of prod=', dim_of_prod, "  rank of qs=", calculate_dim_of_qs(n, A, prj))
+                print('p=', p)
+                vec = matrix((prj * A).transpose().kernel().basis())[0]
+                q = []
+                for j in range(len(vec)):
+                    if vec[j]==1:
+                        q.append(i_to_mon[j])
+                
+                print('q in kernel=', q, multiply_polynomials(p, q))
+                return
+
+search_for_quad_growth(5, 20, 1916, 5)
+# seed(25) #16 looks like a counterexample
+# min_n = 4
+# max_n = 40
+# populate_monomials_list(min_n)
+# p = [i_to_mon[i] for i in range(num_of_monomials_deg_atmost(min_n, 3)) if randint(0, 10)<3] 
+# for n in range(10, 11):#11,40):
     # p = [(0, 1, 2), (4, 5, 6), (1, 2), (4,5), (6, 7)]#[(0, 1),(1,2),(2,3),(1,3)] with n=4 showed the bug (the code was using monomials multiplication, rather than polynomials multiplication, to create A)
-    A, prj = generate_equations(n, p)
-    print('n=', n, 'rank of prod=', calculate_dim_of_prod(n, A, prj), "  rank of qs=", calculate_dim_of_qs(n, A, prj))
-    print('p=', p)
-    is_of_p = [mon_to_i[mon] for mon in p]
-    mons_from_is_of_p = [i_to_mon[i] for i in is_of_p]
+    # p = [(0, 1, 2), (0, 1, 3), (0, 2, 3), (1, 2, 3), (0, 1), (0, 3), (1, 3), (2, 3), (3,), ()] looks like a counterexample (seed=16)
+    # p = [(0,1), ()]
+    # A, prj = generate_equations(n, p)
+    # print('n=', n, 'rank of prod=', calculate_dim_of_prod(n, A, prj), "  rank of qs=", calculate_dim_of_qs(n, A, prj))
+    # print('p=', p)
+    # is_of_p = [mon_to_i[mon] for mon in p]
+    # mons_from_is_of_p = [i_to_mon[i] for i in is_of_p]
     # print('indices of mons of p: ', is_of_p)
     # print('mons reconverted from these indices: ', mons_from_is_of_p)
-    vec = matrix((prj * A).transpose().kernel().basis())[0]
+    # vec = matrix((prj * A).transpose().kernel().basis())[0]
     # print('A: ')
     # print(A.transpose())
     # print('projection matrix: ')
@@ -170,12 +216,12 @@ for n in range(4, max_n + 1):#11,40):
     # print('multiplying by A to: ', vec * (A.transpose()))
     # print('and by the product, the vec is multiplied to: ', vec * ((prj * A).transpose()))
 
-    q = []
-    for j in range(len(vec)):
-        if vec[j]==1:
-            q.append(i_to_mon[j])
+    # q = []
+    # for j in range(len(vec)):
+    #     if vec[j]==1:
+    #         q.append(i_to_mon[j])
     
-    print('q in kernel=', q, multiply_polynomials(p, q))
+    # print('q in kernel=', q, multiply_polynomials(p, q))
 
 # A = matrix(G3(2), [[1, 1, 0], [0,1,1], [1,0,1]])
 # print(A * vector(GF(2), [1,1,1]))
